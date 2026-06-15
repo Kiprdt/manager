@@ -230,7 +230,9 @@
       "Bash(git add *)",
       "Bash(grep -E \"node_modules|\\\\.env$|dev\\\\.db|/uploads/\")",
       "Bash(git rm *)",
-      "Bash(git -c user.name=Mikhail -c user.email=mikhailpokachalov88@gmail.com -c core.autocrlf=false commit -q -m ' *)"
+      "Bash(git -c user.name=Mikhail -c user.email=mikhailpokachalov88@gmail.com -c core.autocrlf=false commit -q -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git ls-remote *)"
     ]
   }
 }

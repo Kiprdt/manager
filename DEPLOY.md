@@ -42,6 +42,31 @@ docker compose logs -f api                     # "Server listening", без ош
 > Первый зарегистрированный аккаунт «забирает» все существующие данные с `userId = null`
 > (на чистой БД это просто создаёт пользователя).
 
+## Вариант Б: готовые образы из GHCR (без сборки на сервере)
+
+GitHub Actions (`.github/workflows/docker.yml`) при пуше в `main` собирает образы и
+пушит в GitHub Container Registry: `ghcr.io/kiprdt/manager-api` и `…-web`.
+
+Один раз сделать пакеты доступными для сервера (проще всего — публичными):
+GitHub → профиль/организация → **Packages** → `manager-api` и `manager-web` →
+Package settings → Change visibility → **Public**.
+(Либо оставить приватными и на сервере выполнить `docker login ghcr.io` с PAT, имеющим `read:packages`.)
+
+На сервере:
+
+```bash
+git clone https://github.com/Kiprdt/manager.git life-manager && cd life-manager
+cp .env.example .env
+sed -i "s/^JWT_SECRET=.*/JWT_SECRET=$(openssl rand -hex 32)/" .env
+
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Обновление: `git pull` не нужен для образов — достаточно
+`docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`
+(тянет свежий `latest`). Чтобы зафиксировать версию — `IMAGE_TAG=<sha> docker compose -f docker-compose.prod.yml up -d`.
+
 ## Обновление (выкатка новой версии)
 
 ```bash

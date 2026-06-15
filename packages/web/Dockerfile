@@ -1,6 +1,7 @@
-FROM node:20-alpine AS builder
-# Версия pnpm берётся из поля packageManager в package.json (детерминированно).
-RUN corepack enable
+# node:22 — pnpm 11.x использует встроенный node:sqlite (его нет в node:20).
+FROM node:22-alpine AS builder
+# pnpm ставим напрямую через npm (надёжнее corepack в CI), версия фиксирована.
+RUN npm install -g pnpm@11.5.1
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./

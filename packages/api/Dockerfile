@@ -1,6 +1,8 @@
-FROM node:20-alpine AS base
-# Версия pnpm берётся из поля packageManager в package.json (детерминированно).
-RUN corepack enable
+# node:22 — pnpm 11.x использует встроенный node:sqlite (его нет в node:20).
+FROM node:22-alpine AS base
+# openssl нужен движку Prisma на Alpine (musl); pnpm ставим напрямую через npm
+# (надёжнее corepack, без проблем с подписью в CI), версия фиксирована.
+RUN apk add --no-cache openssl && npm install -g pnpm@11.5.1
 WORKDIR /app
 
 # Копируем все манифесты + lockfile (нужны для корректного --frozen-lockfile

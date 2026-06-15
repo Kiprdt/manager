@@ -232,7 +232,9 @@
       "Bash(git rm *)",
       "Bash(git -c user.name=Mikhail -c user.email=mikhailpokachalov88@gmail.com -c core.autocrlf=false commit -q -m ' *)",
       "Bash(git remote *)",
-      "Bash(git ls-remote *)"
+      "Bash(git ls-remote *)",
+      "Bash(gh --version)",
+      "Bash(gh run *)"
     ]
   }
 }

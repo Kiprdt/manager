@@ -2,6 +2,7 @@
   "name": "life-app",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@11.5.1",
   "scripts": {
     "dev": "pnpm --parallel --filter api --filter web dev",
     "build": "pnpm --filter shared build && pnpm --filter api build && pnpm --filter web build",

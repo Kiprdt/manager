@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Версия pnpm берётся из поля packageManager в package.json (детерминированно).
+RUN corepack enable
 WORKDIR /app
 
 # Копируем все манифесты + lockfile (нужны для корректного --frozen-lockfile

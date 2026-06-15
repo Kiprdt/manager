@@ -6,3 +6,8 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - esbuild
   - prisma
+
+# Не падать при «проигнорированных» build-скриптах в чистой установке (Docker/CI).
+# Нужные бинарники приходят иначе: esbuild — через @esbuild/<platform> (optionalDeps),
+# движок Prisma — через явный `prisma generate` в Dockerfile.
+strictDepBuilds: false

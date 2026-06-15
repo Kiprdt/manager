@@ -1,5 +1,6 @@
 FROM node:20-alpine AS builder
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Версия pnpm берётся из поля packageManager в package.json (детерминированно).
+RUN corepack enable
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./

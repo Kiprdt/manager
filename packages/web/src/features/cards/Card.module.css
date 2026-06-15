@@ -1,0 +1,500 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 22px;
+  gap: 14px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.titleInput {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  padding: 2px 0;
+  border-bottom: 1px solid transparent;
+}
+.titleInput:focus {
+  border-bottom-color: var(--accent-blue);
+}
+
+.closeBtn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.closeBtn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 2px 0 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input:focus,
+.textarea:focus,
+.select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  background-color: var(--surface);
+}
+.textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.allDayToggle {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-blue);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+.allDayToggle input {
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+/* Поля даты/времени — мягкий iOS-стиль */
+.input[type='datetime-local'],
+.input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  border-radius: 14px;
+  padding: 11px 14px;
+  background: var(--surface-2);
+  accent-color: var(--accent-blue);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.1s ease;
+}
+.input[type='datetime-local']:hover,
+.input[type='date']:hover {
+  background: var(--surface);
+  border-color: #d0d0d4;
+}
+.input[type='datetime-local']:focus,
+.input[type='date']:focus {
+  transform: translateY(-1px);
+}
+.input[type='datetime-local']:active,
+.input[type='date']:active {
+  transform: scale(0.99);
+}
+/* Иконка календаря-пикера */
+.input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 3px;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.input[type='datetime-local']::-webkit-calendar-picker-indicator:hover,
+.input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(0, 122, 255, 0.12);
+}
+
+/* Селекты тоже округляем сильнее и добавляем стрелку в стиле iOS */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  border-radius: 14px;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+.row > .field {
+  flex: 1;
+}
+
+/* Учёт времени */
+.timeRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.timeField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.timeCap {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.timeInput {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.timeInput:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  background: var(--surface);
+}
+.timerBtn {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent-blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s ease;
+}
+.timerBtn:hover {
+  background: var(--surface);
+}
+.timerBtnRun {
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--accent);
+  border-color: transparent;
+}
+.timeHint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Связанные заметки */
+.linkBtn {
+  float: right;
+  border: none;
+  background: none;
+  color: var(--accent-blue);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.noteRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.noteRow:hover {
+  color: var(--accent-blue);
+}
+.noteAtt {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Прогресс подзадач */
+.subProgress {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.subBar {
+  width: 70px;
+  height: 6px;
+  border-radius: 980px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.subFill {
+  display: block;
+  height: 100%;
+  border-radius: 980px;
+  background: #34c759;
+  transition: width 0.3s ease;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* Список привязанных задач / подзадач */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.check.done {
+  background: #34c759;
+  border-color: #34c759;
+}
+
+.taskTitle {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+}
+.taskTitle.done {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: #c7c7cc;
+  font-size: 17px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+.removeBtn:hover {
+  color: var(--accent);
+}
+
+.addRow {
+  display: flex;
+  gap: 8px;
+}
+.addRow .input {
+  flex: 1;
+}
+
+.addBtn {
+  padding: 9px 14px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.addBtn:hover {
+  filter: brightness(1.05);
+}
+.addBtn:active {
+  transform: scale(0.97);
+}
+.addBtn:disabled {
+  opacity: 0.4;
+}
+
+/* Чипы участников */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 11px;
+  border-radius: 980px;
+  background: rgba(0, 122, 255, 0.1);
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 500;
+}
+.chip button {
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+}
+.chip button:hover {
+  opacity: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.saveBtn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.dupBtn {
+  margin-left: auto;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dupBtn:hover {
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+.dupBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.saveBtn:hover {
+  filter: brightness(1.05);
+}
+.saveBtn:active {
+  transform: scale(0.98);
+}
+
+.deleteBtn {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+}
+.deleteBtn:hover {
+  background: rgba(255, 59, 48, 0.08);
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  align-self: flex-start;
+}
+.linkBtn:hover {
+  text-decoration: underline;
+}

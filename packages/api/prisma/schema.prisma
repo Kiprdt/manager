@@ -1,0 +1,514 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite не поддерживает enum, timestamptz и массивы.
+// TaskStatus хранится как String ("TODO" | "IN_PROGRESS" | "DONE") — валидация на уровне Zod/shared.
+// DateTime хранится как UTC ISO-строка; конвертация в локальный TZ только на фронте.
+// attendees (email-адреса участников) хранятся как JSON-массив в String.
+
+// Пользователь (аккаунт). Данные изолируются по userId.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+}
+
+// Категории/зоны времени (работа, спорт, отдых…) — общий контекст для задач и мероприятий
+model Category {
+  id         String      @id @default(cuid())
+  userId     String?
+  name       String
+  color      String
+  createdAt  DateTime    @default(now())
+  tasks      Task[]
+  timeBlocks TimeBlock[]
+  financeTxs FinanceTx[]
+  workouts   Workout[]
+  goals      Goal[]
+
+  @@index([userId])
+}
+
+// Стратегическая цель со сводным прогрессом из задач/привычек/веса/финансов
+model Goal {
+  id          String    @id @default(cuid())
+  userId      String?
+  title       String
+  type        String    @default("custom") // (устар.) категория цели
+  priority    Int       @default(0)   // 0..3 — приоритет цели
+  notes       String?                  // комментарий к цели
+  targetValue Float?
+  startValue  Float?
+  currentValue Float    @default(0)
+  unit        String?
+  dueAt       DateTime?
+  habitId     String?   // для type=habit
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  done        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  tasks       Task[]
+
+  @@index([userId])
+}
+
+model Task {
+  id               String   @id @default(cuid())
+  userId           String?
+  title            String
+  description      String?
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  notes            String?              // комментарий
+  status           String   @default("TODO")   // TaskStatus
+  priority         Int      @default(0)
+  importance       Int      @default(0)     // Эйзенхауэр: важность 0..3
+  urgent           Boolean  @default(false) // Эйзенхауэр: срочность (ручная отметка)
+  scope            String   @default("day") // Bullet Journal лог: day | week | month
+  source           String   @default("app") // источник: app | telegram (для синхронизации)
+  estimatedMinutes Int?
+  actualMinutes    Int?                // фактически потрачено (трекинг времени)
+  dueAt            DateTime?            // дедлайн
+  dueAllDay        Boolean  @default(false) // дедлайн без времени (только дата)
+  recurrenceRule   String?             // повторяемость (RRULE)
+  tags             String?             // JSON-массив тегов/контекстов
+
+  // Подзадачи — самоссылка
+  parentId         String?
+  parent           Task?    @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks         Task[]   @relation("Subtasks")
+
+  // Основной таймблок (1:N, обратная совместимость с drag&drop)
+  primaryBlocks    TimeBlock[] @relation("PrimaryTask")
+  // Привязка к мероприятиям (N:M)
+  events           TimeBlock[] @relation("EventTasks")
+  linkedNotes      Note[]
+  goalId           String?
+  goal             Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  telegramLink     TelegramTaskLink?
+
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+
+  @@index([userId])
+}
+
+model Habit {
+  id           String       @id @default(cuid())
+  userId       String?
+  title        String
+  color        String?
+  active       Boolean      @default(true)
+  scheduleType String       @default("daily") // daily | weekly | custom
+  weekdays     String?      // JSON-массив дней недели [1..7] для custom (пн=1)
+  weeklyTarget Int?         // сколько раз в неделю (для weekly)
+  targetCount  Int          @default(1) // сколько отметок в день = выполнено (счётчик)
+  reminderTime String?      // "HH:MM" локальное время напоминания
+  createdAt    DateTime     @default(now())
+  entries      HabitEntry[]
+
+  @@index([userId])
+}
+
+// Отметка выполнения привычки за день. count — для счётчиков (напр. 8 стаканов).
+model HabitEntry {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime // полночь дня
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+}
+
+// ── Финансы ────────────────────────────────────────────────────────────────
+model FinanceTx {
+  id         String    @id @default(cuid())
+  userId     String?
+  type       String    // income | expense
+  amount     Float
+  category   String?   // свободная подпись (legacy)
+  categoryId String?   // привязка к универсальной зоне
+  categoryRef Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  note       String?
+  date       DateTime
+  recurring  Boolean   @default(false) // ежемесячно повторяющийся (план)
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model FinanceInstrument {
+  id                 String   @id @default(cuid())
+  userId             String?
+  kind               String   // deposit | investment | loan
+  name               String
+  principal          Float
+  annualRate         Float    // годовой процент
+  termMonths         Int
+  monthlyContribution Float   @default(0) // для вкладов/инвестиций
+  createdAt          DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Единственная строка настроек приложения (интеграции и пр.)
+model Setting {
+  id               String  @id @default(cuid())
+  userId           String? @unique
+  telegramBotToken String?
+  telegramChatId   String?
+  telegramEnabled  Boolean @default(false)
+  llmApiKey        String?
+  llmBaseUrl       String?
+  llmModel         String?
+  proxyUrl         String?  // прокси для исходящих запросов (Telegram/LLM), напр. http://127.0.0.1:1080
+  heightCm         Int?     // рост для расчёта ИМТ/КБЖУ
+  weightGoalKg     Float?   // целевой вес
+  sex              String?  // 'male' | 'female'
+  birthYear        Int?     // год рождения (для возраста)
+  activityLevel    String?  // sedentary|light|moderate|active|veryActive
+  goal             String?  // lose|maintain|gain
+  caloriesGoal     Int?     // целевые калории
+  proteinGoal      Int?     // целевой белок (г)
+  carbsGoal        Int?     // целевые углеводы (г)
+  fatGoal          Int?     // целевые жиры (г)
+  hrTargetMin      Int?     // целевой пульс кардио, низ (по умолч. 120)
+  hrTargetMax      Int?     // целевой пульс кардио, верх (по умолч. 140)
+  updatedAt        DateTime @updatedAt
+}
+
+// ── Заметки ────────────────────────────────────────────────────────────────
+model Note {
+  id          String       @id @default(cuid())
+  userId      String?
+  title       String       @default("")
+  content     String       @default("")
+  tags        String?      // JSON-массив тегов
+  date        DateTime?    // заметка дня (полночь) либо null
+  taskId      String?      // привязка к задаче
+  task        Task?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  timeBlockId String?      // привязка к мероприятию
+  timeBlock   TimeBlock?   @relation(fields: [timeBlockId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attachments Attachment[]
+
+  @@index([userId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  filename  String   // оригинальное имя
+  storedAs  String   // имя файла на диске
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+}
+
+// ── Здоровье ───────────────────────────────────────────────────────────────
+model WeightEntry {
+  id        String   @id @default(cuid())
+  userId    String?
+  date      DateTime // полночь дня
+  weightKg  Float
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model Workout {
+  id             String            @id @default(cuid())
+  userId         String?
+  date           DateTime
+  type           String            // напр. «Бег», «Силовая»
+  categoryId     String?
+  category       Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  kind           String            @default("strength") // strength | cardio
+  durationMin    Int?
+  inclinePct     Float?            // кардио — наклон дорожки
+  speedKmh       Float?            // кардио — скорость
+  caloriesBurned Int?              // кардио — авто-расчёт
+  notes          String?
+  timeBlockId    String?           @unique // связанный блок календаря
+  exercises      WorkoutExercise[]
+  createdAt      DateTime          @default(now())
+
+  @@index([userId])
+}
+
+// Упражнение в плане силовой тренировки
+model WorkoutExercise {
+  id        String  @id @default(cuid())
+  workoutId String
+  workout   Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  name      String
+  weightKg  Float?
+  sets      Int?
+  reps      Int?
+  order     Int     @default(0)
+}
+
+model Meal {
+  id        String   @id @default(cuid())
+  userId    String?
+  date      DateTime // полночь дня, одна запись на день
+  calories  Int?
+  protein   Int?
+  carbs     Int?
+  fat       Int?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+// Лекарства и добавки с периодичностью; entries — приёмы по дням (как привычки).
+model Supplement {
+  id           String            @id @default(cuid())
+  userId       String?
+  name         String
+  dosage       String?
+  kind         String            @default("supplement") // supplement | medication
+  scheduleType String            @default("daily")      // daily | custom
+  weekdays     String?           // JSON [1..7]
+  timeOfDay    String?           // "HH:MM" напоминание
+  active       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  entries      SupplementEntry[]
+
+  @@index([userId])
+}
+
+model SupplementEntry {
+  id           String     @id @default(cuid())
+  supplementId String
+  supplement   Supplement @relation(fields: [supplementId], references: [id], onDelete: Cascade)
+  date         DateTime
+  createdAt    DateTime   @default(now())
+
+  @@unique([supplementId, date])
+}
+
+model TimeBlock {
+  id             String   @id @default(cuid())
+  userId         String?
+  title          String
+  taskId         String?
+  task           Task?    @relation("PrimaryTask", fields: [taskId], references: [id], onDelete: SetNull)
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  // Привязанные задачи (N:M)
+  tasks          Task[]   @relation("EventTasks")
+  startAt        DateTime
+  endAt          DateTime
+  isAllDay       Boolean  @default(false)
+  recurrenceRule String?
+  color          String?
+  location       String?             // место
+  notes          String?             // комментарий
+  attendees      String?             // JSON-массив email участников
+  tags           String?             // JSON-массив тегов (напр. «тренировка»)
+  linkedNotes    Note[]
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Рефлексия дня — свободное описание прожитого дня (одна запись на дату)
+model Reflection {
+  id        String   @id @default(cuid())
+  userId    String?
+  date      DateTime           // полночь дня
+  text      String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+// ── Telegram-синхронизация ────────────────────────────────────────────────────
+
+// Привязанный чат пользователя (пока один пользователь)
+model TelegramChat {
+  id                   String   @id @default(cuid())
+  userId               String?
+  chatId               String   @unique
+  businessConnectionId String?            // задел под нативные чек-листы (вариант A)
+  pendingAction        String?            // диалоговое состояние, напр. "add:2026-06-11"
+  linkedAt             DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Одно сообщение-список на день в чате
+model TelegramDayList {
+  id        String   @id @default(cuid())
+  chatId    String
+  date      DateTime           // полночь дня
+  messageId Int
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatId, date])
+}
+
+// Связь задачи приложения с пунктом списка дня в Telegram
+model TelegramTaskLink {
+  id          String   @id @default(cuid())
+  taskId      String   @unique
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  date        DateTime           // день, в списке которого находится задача
+  tgItemIndex Int                // индекс/позиция пункта в сообщении-списке
+  createdAt   DateTime @default(now())
+}
+
+// ── Финансовый модуль (порт из new_appl) ─────────────────────────────────────
+// Полноценный учёт: счета, история баланса, транзакции, категории, бюджеты,
+// цели накоплений, кредитные карты, регулярные платежи/подписки, список покупок.
+// Денежные суммы — Float (центы не выделяем, как в исходном приложении).
+// monthYear хранится строкой "MM-yyyy"; nextDate/deadline — ISO-дата (DateTime).
+
+// Счёт (наличные, дебетовая/кредитная карта, вклад…).
+// Для кредитного счёта: balance = доступный кредит, долг = creditLimit − balance.
+model FinAccount {
+  id          String   @id @default(cuid())
+  userId      String?
+  name        String
+  currency    String   @default("RUB")
+  balance     Float    @default(0)
+  type        String                       // "Наличные" | "Дебетовая" | "Кредитная" | ...
+  cardNumber  String?
+  color       String?
+  creditLimit Float    @default(0)          // ≥ 0; для кредитных счетов
+  // Метаданные кредитной карты (бывшая таблица credit_card_meta)
+  interestRate  Float  @default(0)          // годовая ставка, %
+  minPaymentPct Float  @default(5)          // минимальный платёж, % от долга
+  paymentDay    Int    @default(1)          // день платежа (1..31)
+  createdAt   DateTime @default(now())
+
+  balanceHistory     FinBalanceHistory[]
+  txFrom             FinTransaction[]    @relation("TxFromAccount")
+  txTo               FinTransaction[]    @relation("TxToAccount")
+  recurrentPayments  FinRecurrentPayment[]
+
+  @@index([userId])
+}
+
+// Срез баланса счёта на дату (одна запись на счёт+дату) — для графиков динамики.
+model FinBalanceHistory {
+  id           String     @id @default(cuid())
+  accountId    String
+  account      FinAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  balance      Float
+  recordedDate DateTime                     // полночь дня среза
+
+  @@unique([accountId, recordedDate])
+  @@index([accountId])
+}
+
+// Категория дохода/расхода. Иерархия через parentId (подкатегории). icon — эмодзи.
+model FinCategory {
+  id       String        @id @default(cuid())
+  userId   String?
+  name     String
+  type     String                           // "Доход" | "Расход"
+  icon     String        @default("💸")
+  parentId String?
+  parent   FinCategory?  @relation("FinSubcategories", fields: [parentId], references: [id], onDelete: Cascade)
+  children FinCategory[] @relation("FinSubcategories")
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+// Транзакция: доход, расход или перевод между счетами.
+// type: "Доход" | "Расход" | "Перевод". tags — строка через запятую (как в new_appl).
+model FinTransaction {
+  id            String      @id @default(cuid())
+  userId        String?
+  type          String
+  category      String?
+  subcategory   String?
+  amount        Float
+  accountId     String
+  account       FinAccount  @relation("TxFromAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  toAccountId   String?
+  toAccount     FinAccount? @relation("TxToAccount", fields: [toAccountId], references: [id], onDelete: SetNull)
+  date          DateTime
+  description   String?
+  tags          String?
+  createdAt     DateTime    @default(now())
+
+  @@index([userId])
+  @@index([accountId])
+  @@index([date])
+}
+
+// Бюджет на категорию за месяц. spent/forecast вычисляются на лету по транзакциям.
+model FinBudget {
+  id             String   @id @default(cuid())
+  userId         String?
+  category       String
+  plannedAmount  Float
+  monthYear      String                      // "MM-yyyy"
+  alertThreshold Float    @default(80)        // порог уведомления, % (0..100)
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Финансовая цель накопления.
+model FinGoal {
+  id            String    @id @default(cuid())
+  userId        String?
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// Регулярный платёж / подписка. Подписка = type "Расход" без категории.
+// frequency: "Ежедневно" | "Еженедельно" | "Ежемесячно" | "Ежегодно" и т.п.
+model FinRecurrentPayment {
+  id          String     @id @default(cuid())
+  userId      String?
+  name        String
+  type        String     @default("Расход")
+  category    String?
+  subcategory String?
+  amount      Float
+  accountId   String
+  account     FinAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  frequency   String
+  nextDate    DateTime
+  createdAt   DateTime   @default(now())
+
+  @@index([userId])
+}
+
+// Пункт списка покупок (в new_appl хранился в памяти — здесь персистентный).
+model FinShoppingItem {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  quantity  Float    @default(1)
+  unit      String   @default("шт")
+  price     Float    @default(0)
+  checked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

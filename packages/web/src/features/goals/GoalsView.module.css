@@ -1,0 +1,298 @@
+.root {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 16px 48px;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 760px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  padding: 1px 9px;
+}
+
+/* Добавление */
+.addBox {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.input,
+.sel,
+.date,
+.comment {
+  height: 38px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-md);
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input {
+  flex: 1;
+  min-width: 180px;
+}
+.date {
+  width: 150px;
+}
+.comment {
+  flex: 1 1 100%;
+}
+.input:focus,
+.sel:focus,
+.date:focus,
+.comment:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.addBtn {
+  height: 38px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.addBtn:hover {
+  filter: brightness(1.06);
+}
+
+/* Список */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.goal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+.goalDone {
+  opacity: 0.55;
+}
+.goalMain {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.prio {
+  flex-shrink: 0;
+  width: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -1px;
+  font-family: var(--font-mono);
+  text-align: center;
+  padding-top: 2px;
+}
+
+.bodyCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.gtitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.goalDone .gtitle {
+  text-decoration: line-through;
+}
+.due {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.overdue {
+  color: var(--accent);
+  font-weight: 600;
+}
+.notes {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.linkToggle {
+  align-self: flex-start;
+  margin-top: 2px;
+  border: none;
+  background: none;
+  color: var(--accent-blue);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.linkCount {
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  padding: 0 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+.doneBtn,
+.del {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.doneBtn:hover {
+  border-color: #34c759;
+  color: #34c759;
+}
+.del:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Панель связанных задач */
+.linkPanel {
+  border-top: 1px solid var(--border);
+  padding: 10px 14px 12px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.linkEmpty {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.linkDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  flex-shrink: 0;
+}
+.linkDotDone {
+  background: #34c759;
+}
+.linkTitle {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.linkDone {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.unlink {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.unlink:hover {
+  color: var(--accent);
+}
+.linkAdd {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.linkInput,
+.linkSel {
+  height: 32px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+}
+.linkInput {
+  flex: 1;
+}
+.linkInput:focus,
+.linkSel:focus {
+  border-color: var(--accent-blue);
+}

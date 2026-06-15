@@ -1,0 +1,247 @@
+.root {
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  background: var(--bg);
+
+  /* FullCalendar theming → Apple Calendar look */
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-2);
+  --fc-today-bg-color: rgba(255, 59, 48, 0.06);
+  --fc-now-indicator-color: var(--accent);
+  --fc-event-border-color: transparent;
+  --fc-button-text-color: var(--accent-blue);
+  --fc-button-bg-color: transparent;
+  --fc-button-border-color: transparent;
+  --fc-button-hover-bg-color: rgba(0, 0, 0, 0.04);
+  --fc-button-hover-border-color: transparent;
+  --fc-button-active-bg-color: rgba(0, 122, 255, 0.12);
+  --fc-button-active-border-color: transparent;
+}
+
+/* Внешняя рамка календаря — карточка с мягкими углами */
+.root :global(.fc) {
+  height: 100%;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 12px 14px 6px;
+  font-size: 13px;
+}
+
+.root :global(.fc .fc-scrollgrid) {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Заголовок-тулбар */
+.root :global(.fc .fc-toolbar-title) {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.root :global(.fc .fc-button) {
+  border-radius: 980px;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 5px 12px;
+  box-shadow: none;
+  transition: background 0.15s ease;
+  text-transform: capitalize;
+}
+.root :global(.fc .fc-button:focus) {
+  box-shadow: none;
+}
+
+/* Группа переключения вида — сегментированный контрол */
+.root :global(.fc .fc-button-group) {
+  background: var(--surface-2);
+  border-radius: 980px;
+  padding: 2px;
+  gap: 2px;
+}
+.root :global(.fc .fc-button-group .fc-button) {
+  border-radius: 980px;
+}
+.root :global(.fc .fc-button-primary:not(:disabled).fc-button-active) {
+  background: var(--surface);
+  color: var(--accent-blue);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Заголовки колонок (дни недели) */
+.root :global(.fc .fc-col-header-cell-cushion) {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 4px;
+}
+
+/* Заголовок дня с бейджем активных задач — бейдж inline рядом с датой */
+.dayHeader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.dayCell {
+  display: inline-flex;
+  align-items: center;
+}
+/* Бейдж в месяце — в верхнем-левом углу ячейки, число остаётся справа */
+.root :global(.fc-daygrid-day-frame) {
+  position: relative;
+}
+.dayCell .dayBadge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+}
+.dayBadge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 980px;
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+.dayBadge:hover {
+  filter: brightness(1.05);
+}
+.dayBadge:active {
+  transform: scale(0.9);
+}
+
+/* Числа дней */
+.root :global(.fc .fc-daygrid-day-number) {
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+/* Сегодняшнее число — красный кружок как в iOS */
+.root :global(.fc .fc-day-today .fc-daygrid-day-number) {
+  color: #fff;
+  background: var(--accent);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 4px;
+  font-weight: 600;
+}
+
+/* События — скруглённые «таблетки» */
+.root :global(.fc .fc-event),
+.root :global(.fc .fc-daygrid-event),
+.root :global(.fc .fc-timegrid-event) {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: none;
+  overflow: hidden;
+}
+.root :global(.fc .fc-event:hover) {
+  filter: brightness(0.97);
+}
+
+/* Часовой блок: время сверху, название — ниже и ПОЛНОСТЬЮ видно (перенос по словам).
+   Высоты слота (5.6em на час) хватает на несколько строк. */
+.root :global(.fc-timegrid-event .fc-event-main-frame) {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  overflow: hidden;
+}
+.root :global(.fc-timegrid-event .fc-event-time) {
+  flex-shrink: 0;
+  font-weight: 600;
+  opacity: 0.85;
+}
+.root :global(.fc-timegrid-event .fc-event-title-container) {
+  flex: 1;
+  min-width: 0;
+}
+.root :global(.fc-timegrid-event .fc-event-title) {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: clip;
+  line-height: 1.22;
+  word-break: break-word;
+  hyphens: auto;
+}
+/* Короткие блоки (≤30 мин) — оставляем одну строку с многоточием, чтобы не вылезали */
+.root :global(.fc-timegrid-event-short .fc-event-main-frame) {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+}
+.root :global(.fc-timegrid-event-short .fc-event-title) {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.root :global(.fc .fc-timegrid-slot) {
+  height: 5.6em;
+}
+
+.root :global(.fc .fc-timegrid-axis-cushion),
+.root :global(.fc .fc-timegrid-slot-label-cushion) {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Линия «сейчас» — красная точка + линия */
+.root :global(.fc .fc-timegrid-now-indicator-line) {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+.root :global(.fc .fc-timegrid-now-indicator-arrow) {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+/* Активный блок (идёт прямо сейчас) — мягкая внутренняя обводка */
+:global(.fc-event--active) {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Задачи на календаре — слегка иной вид, чтобы отличать от мероприятий */
+:global(.fc-task) {
+  border-radius: 8px;
+  font-weight: 600;
+}
+:global(.fc-task--done) {
+  opacity: 0.5;
+}
+:global(.fc-task--done .fc-event-title) {
+  text-decoration: line-through;
+}
+
+/* Убираем системную рамку-фокус после клика по событию */
+.root :global(.fc .fc-event:focus),
+.root :global(.fc .fc-event:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+.root :global(.fc .fc-event:focus.fc-event--active) {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.6);
+}

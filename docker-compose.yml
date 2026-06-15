@@ -1,0 +1,43 @@
+version: '3.9'
+
+# БД: SQLite (файл на томе). Для личного/мало-пользовательского менеджера этого
+# достаточно и не требует переписывания миграций под Postgres.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    environment:
+      # Абсолютный путь к SQLite-файлу на томе app-db.
+      DATABASE_URL: file:/data/app.db
+      PORT: 3001
+      NODE_ENV: production
+      # Обязателен на сервере (≥16 символов) — иначе api не стартует.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET обязателен (≥16 символов)}
+      # Конкретный домен фронтенда в проде (по умолчанию открыто).
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    volumes:
+      - app-db:/data
+      - uploads:/app/packages/api/uploads
+    restart: unless-stopped
+    # Порт наружу не публикуем — доступ только через web (nginx) во внутренней сети.
+    expose:
+      - '3001'
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+      args:
+        # Пустые → фронт ходит на тот же origin, nginx проксирует /api, /ws, /uploads.
+        VITE_API_URL: ''
+        VITE_WS_URL: ''
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  app-db:
+  uploads:

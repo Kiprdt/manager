@@ -1,0 +1,220 @@
+:global(*) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * Тема в духе Wayne / Stark: графитовая «техно-нуар» база, тонкие чёткие границы,
+ * холодный стальной акцент + сдержанное золото для премиальных деталей.
+ * Тёмная тема — основная (герой); светлая — рафинированная, с заметными обводками.
+ */
+:global(:root) {
+  /* Светлая тема — чистая, но с читаемыми границами */
+  --bg: #e9ebef;
+  --surface: #ffffff;
+  --surface-2: #f3f5f8;
+  --border: #c9cfd9;
+  --border-strong: #aab2c0;
+  --text: #14171c;
+  --text-muted: #5d6675;
+  --accent: #e5484d;
+  --accent-blue: #2563eb;
+  --accent-gold: #a9802f;
+  --ring: rgba(37, 99, 235, 0.35);
+  --header-bg: rgba(255, 255, 255, 0.78);
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 7px;
+  /* hairline-ring внутри тени — даёт чёткую обводку всем карточкам в светлой теме */
+  --shadow-soft: inset 0 0 0 1px rgba(20, 30, 50, 0.1), 0 1px 2px rgba(20, 30, 50, 0.06),
+    0 10px 30px rgba(20, 30, 50, 0.08);
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, 'Cascadia Code', monospace;
+}
+
+:global(html[data-theme='dark']) {
+  /* Глубокий графит с лёгкой синевой — «cockpit» Старка */
+  --bg: #0a0c10;
+  --surface: #14181f;
+  --surface-2: #1b212b;
+  --border: #2a323f;
+  --border-strong: #3a4452;
+  --text: #e7ebf2;
+  --text-muted: #8a93a3;
+  --accent: #ff5b5e;
+  --accent-blue: #4ea1ff;
+  --accent-gold: #c9a44c;
+  --ring: rgba(78, 161, 255, 0.4);
+  --header-bg: rgba(12, 15, 20, 0.72);
+  --shadow-soft: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.5),
+    0 14px 44px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+:global(body) {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+:global(#root) {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 56px;
+  background: var(--header-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border);
+  /* тонкая «техно»-линия снизу: сталь → золото */
+  box-shadow: 0 1px 0 0 color-mix(in srgb, var(--accent-blue) 22%, transparent);
+  flex-shrink: 0;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  background: linear-gradient(180deg, var(--text), color-mix(in srgb, var(--accent-gold) 60%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@media (max-width: 900px) {
+  .logo {
+    display: none;
+  }
+}
+
+.headRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cmdBtn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cmdBtn:hover {
+  background: var(--surface-2);
+}
+
+.panelToggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 980px;
+  color: var(--accent-blue);
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.panelToggle:hover {
+  background: var(--surface-2);
+}
+.panelToggle:active {
+  transform: scale(0.97);
+}
+
+/* Сегментированный переключатель разделов — гибкая прокручиваемая зона */
+.viewSwitch {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: 980px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.viewSwitch::-webkit-scrollbar {
+  display: none;
+}
+.viewBtn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 13px;
+  border-radius: 980px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.viewBtn:hover {
+  color: var(--text);
+}
+.viewBtnActive {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent-blue) 45%, transparent);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.suspense {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Объединённый раздел «Сегодня + Статистика» — вертикальный стек со скроллом */
+.todayStack {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+/* Вью внутри стека сжимаются по контенту, скроллит общий контейнер.
+   !important — перебиваем height:100%/overflow:auto собственных .root этих вью. */
+.todayStack > * {
+  height: auto !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}

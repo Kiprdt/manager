@@ -1,0 +1,413 @@
+.root {
+  display: flex;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+  padding: 16px;
+  background: var(--bg);
+}
+
+/* ---------- Левая панель: bullet journal ---------- */
+.left {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 14px 14px 0;
+  overflow-y: auto;
+}
+
+.monthHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.monthTitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+  flex: 1;
+  text-align: center;
+}
+.nav {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.nav:hover {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+.todayBtn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent-blue);
+  border-radius: 980px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Мини-календарь */
+.cal {
+  margin-bottom: 16px;
+}
+.weekHead,
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.weekHead {
+  margin-bottom: 6px;
+}
+.wd {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.week {
+  margin-bottom: 4px;
+}
+.day {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: background 0.12s, border-color 0.12s;
+}
+.day:hover {
+  border-color: var(--border-strong);
+}
+.dayNum {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.dayEmpty {
+  aspect-ratio: 1;
+}
+.dayToday .dayNum {
+  color: var(--accent);
+  font-weight: 800;
+}
+.daySel {
+  background: color-mix(in srgb, var(--accent-blue) 18%, transparent);
+  border-color: var(--accent-blue);
+}
+.dayDrop {
+  background: color-mix(in srgb, var(--accent-gold) 28%, transparent);
+  border-color: var(--accent-gold);
+  border-style: dashed;
+}
+.dots {
+  display: flex;
+  gap: 2px;
+  height: 4px;
+}
+.dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+}
+
+/* Просрочено */
+.overdueSection {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  margin-bottom: 4px;
+}
+.overdueTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.overdueDate {
+  font-size: 11px;
+  color: var(--accent);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.moveBtn {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent-blue);
+  border-radius: 980px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.moveBtn:hover {
+  border-color: var(--accent-blue);
+}
+
+/* Панель дня */
+.dayPanel {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  padding-bottom: 14px;
+}
+.dayTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+  margin-bottom: 10px;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.eventRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.eventRow:hover {
+  background: color-mix(in srgb, var(--accent-blue) 10%, var(--surface-2));
+}
+.eventTime {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 56px;
+  font-variant-numeric: tabular-nums;
+}
+.eventDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.eventTitle {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 6px 2px;
+}
+.taskRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 4px;
+  cursor: grab;
+  border-radius: var(--radius-sm);
+}
+.taskRow:active {
+  cursor: grabbing;
+}
+.taskDragging {
+  opacity: 0.4;
+}
+.taskDone {
+  opacity: 0.5;
+}
+.check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+.checkOn {
+  background: #34c759;
+  border-color: #34c759;
+}
+.prioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.taskTitle {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.taskDone .taskTitle {
+  text-decoration: line-through;
+}
+.taskTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.addRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.addInput {
+  flex: 1;
+  height: 34px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+}
+.addInput:focus {
+  border-color: var(--accent-blue);
+}
+.cardBtn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cardBtn:hover {
+  color: var(--text);
+}
+
+/* ---------- Правая панель: матрица ---------- */
+.right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.matrixHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.matrixTitleWrap {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.matrixTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.matrixSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+.scopeTabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 980px;
+}
+.scopeTab {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 980px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.scopeTab:hover {
+  color: var(--text);
+}
+.scopeTabActive {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-blue) 45%, transparent);
+}
+.matrixBody {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Адаптив: на узких экранах — в колонку */
+@media (max-width: 900px) {
+  .root {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .left {
+    width: 100%;
+  }
+  .matrixBody {
+    min-height: 420px;
+  }
+}

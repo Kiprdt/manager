@@ -1,0 +1,56 @@
+.root {
+  margin-top: 24px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.btn {
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 980px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.hint code {
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+.hint a {
+  color: var(--accent-blue);
+}
+.err {
+  font-size: 13px;
+  color: var(--accent);
+}
+.result {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+}

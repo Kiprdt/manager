@@ -1,0 +1,37 @@
+{
+  "name": "@life-app/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test ../shared/src/__tests__/finance.test.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/jwt": "^7.2.4",
+    "@fastify/multipart": "^8.3.1",
+    "@fastify/static": "^7.0.4",
+    "@fastify/websocket": "^10.0.1",
+    "@life-app/shared": "workspace:*",
+    "@prisma/client": "^5.18.0",
+    "bcryptjs": "^3.0.3",
+    "fastify": "^4.28.1",
+    "fastify-plugin": "^4.5.1",
+    "pino-pretty": "^11.3.0",
+    "rrule": "^2.8.1",
+    "undici": "^6.26.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^20.16.1",
+    "@types/ws": "^8.5.12",
+    "prisma": "^5.18.0",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
+  }
+}

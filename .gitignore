@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.tsbuildinfo
+packages/web/.vite
+packages/api/uploads
+# Локальная dev-БД SQLite (на сервере данные — в docker-томе)
+packages/api/prisma/*.db
+packages/api/prisma/*.db-journal
+.api-dev.log
+# ВАЖНО: packages/api/prisma/migrations НЕ игнорируем — нужны для migrate deploy

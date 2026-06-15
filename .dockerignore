@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.vite
+**/.turbo
+packages/api/prisma/*.db
+packages/api/prisma/*.db-journal
+packages/api/uploads
+.env
+.env.*
+.git
+.gitignore
+*.log
+.api-dev.log

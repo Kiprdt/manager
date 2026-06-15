@@ -1,0 +1,325 @@
+.root {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 48px;
+}
+
+/* ── Список ── */
+.listPage {
+  width: 100%;
+  max-width: 880px;
+}
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.pageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.newBtn {
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 980px;
+  cursor: pointer;
+}
+.tagBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.tagChip {
+  border: none;
+  border-radius: 980px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+.tagChipOn {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.empty {
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 24px 4px;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  min-height: 110px;
+  transition: box-shadow 0.15s ease, transform 0.1s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
+}
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cardPreview {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.cardMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.miniTag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 980px;
+}
+
+/* ── Редактор ── */
+.editorPage {
+  width: 100%;
+  max-width: 720px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 20px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.editorTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.backBtn {
+  border: none;
+  background: none;
+  color: var(--accent-blue);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.topActions {
+  display: flex;
+  gap: 8px;
+}
+.deleteBtn {
+  border: none;
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 980px;
+  cursor: pointer;
+}
+.saveBtn {
+  border: none;
+  background: var(--accent-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 980px;
+  cursor: pointer;
+}
+.saveBtn:disabled {
+  opacity: 0.5;
+}
+.titleInput {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.contentInput {
+  min-height: 200px;
+  border: none;
+  background: none;
+  outline: none;
+  resize: vertical;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  font-family: inherit;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 980px;
+}
+.chip button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+.tagInput {
+  border: 1px dashed var(--border);
+  border-radius: 980px;
+  padding: 3px 10px;
+  font-size: 12px;
+  outline: none;
+  background: none;
+  color: var(--text);
+  width: 90px;
+}
+
+.linkRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.linkField {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.select {
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.attachBtn {
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--accent-blue);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 980px;
+  cursor: pointer;
+}
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.att {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  max-width: 320px;
+}
+.thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.fileIcon {
+  font-size: 26px;
+}
+.attName {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attName:hover {
+  color: var(--accent-blue);
+}
+.attSize {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.attDel {
+  border: none;
+  background: none;
+  color: #c7c7cc;
+  font-size: 16px;
+  cursor: pointer;
+}
+.attDel:hover {
+  color: var(--accent);
+}

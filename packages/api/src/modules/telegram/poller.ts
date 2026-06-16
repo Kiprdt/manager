@@ -149,14 +149,20 @@ export class TelegramPoller {
 
   private async loop(): Promise<void> {
     while (this.running) {
+      // Поллер работает вне пользовательского контекста, поэтому настройки
+      // читаем напрямую из БД (SettingService.get() требует currentUserId).
+      // Берём первую включённую конфигурацию Telegram с токеном.
       let s;
       try {
-        s = await this.settings.get();
-      } catch {
+        s = await this.db.setting.findFirst({
+          where: { telegramEnabled: true, telegramBotToken: { not: null } },
+        });
+      } catch (e) {
+        console.error('[telegram] settings read failed:', (e as Error).message);
         await this.sleep(5000);
         continue;
       }
-      if (!s.telegramEnabled || !s.telegramBotToken) {
+      if (!s?.telegramBotToken) {
         await this.sleep(5000);
         continue;
       }
@@ -165,32 +171,38 @@ export class TelegramPoller {
         proxyUrl: s.proxyUrl,
       });
       if (!res.ok) {
-        // 401/409/сеть — пауза, чтобы не долбить
+        // 401/409/сеть — логируем и делаем паузу, чтобы не долбить.
+        console.warn('[telegram] getUpdates failed:', JSON.stringify(res).slice(0, 300));
         await this.sleep(5000);
         continue;
       }
       for (const u of (res.result ?? []) as TgUpdate[]) {
         this.offset = u.update_id + 1;
         try {
-          await this.handle(u, s.telegramBotToken, s.proxyUrl);
-        } catch {
-          /* один битый апдейт не должен ронять цикл */
+          await this.handle(u, s.telegramBotToken, s.proxyUrl, s.userId);
+        } catch (e) {
+          console.error('[telegram] handle error:', (e as Error).message);
         }
       }
     }
   }
 
-  private async handle(u: TgUpdate, token: string, proxyUrl: string | null): Promise<void> {
+  private async handle(
+    u: TgUpdate,
+    token: string,
+    proxyUrl: string | null,
+    ownerUserId: string | null,
+  ): Promise<void> {
     // callback (кнопки)
     if (u.callback_query) {
       const cq = u.callback_query;
       const chatId = cq.message?.chat.id;
       const data = cq.data ?? '';
       if (chatId == null) return;
-      await this.ensureChat(String(chatId));
+      await this.ensureChat(String(chatId), ownerUserId);
 
       if (data.startsWith('t:')) {
-        const uid = (await this.ensureChat(String(chatId))).userId;
+        const uid = (await this.ensureChat(String(chatId), ownerUserId)).userId;
         if (!uid) {
           await answerCallbackQuery(token, cq.id, 'Аккаунт не привязан', proxyUrl);
           return;
@@ -233,7 +245,7 @@ export class TelegramPoller {
     const msg = u.message;
     if (!msg?.text) return;
     const chatId = msg.chat.id;
-    const chat = await this.ensureChat(String(chatId));
+    const chat = await this.ensureChat(String(chatId), ownerUserId);
     const text = msg.text.trim();
 
     const noUser = async (): Promise<boolean> => {
@@ -393,12 +405,18 @@ export class TelegramPoller {
     return lines.join('\n');
   }
 
-  private async ensureChat(chatId: string) {
-    return this.db.telegramChat.upsert({
+  // Создаёт запись чата и привязывает её к пользователю-владельцу конфигурации
+  // Telegram (без привязки команды бота отвечали бы «аккаунт не привязан»).
+  private async ensureChat(chatId: string, ownerUserId?: string | null) {
+    const chat = await this.db.telegramChat.upsert({
       where: { chatId },
-      create: { chatId },
+      create: { chatId, userId: ownerUserId ?? null },
       update: {},
     });
+    if (!chat.userId && ownerUserId) {
+      return this.db.telegramChat.update({ where: { chatId }, data: { userId: ownerUserId } });
+    }
+    return chat;
   }
 
   private sleep(ms: number): Promise<void> {

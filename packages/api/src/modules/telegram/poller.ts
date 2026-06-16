@@ -123,6 +123,7 @@ function renderFinanceSummary(d: {
 export class TelegramPoller {
   private running = false;
   private offset = 0;
+  private lastTokenTail = '';
   private readonly settings: SettingService;
   private readonly tasks: TaskService;
   private readonly finance: FinanceService;
@@ -154,8 +155,11 @@ export class TelegramPoller {
       // Берём первую включённую конфигурацию Telegram с токеном.
       let s;
       try {
+        // Самая свежая включённая конфигурация (если аккаунтов несколько —
+        // выигрывает последняя сохранённая, т.е. актуальный токен).
         s = await this.db.setting.findFirst({
           where: { telegramEnabled: true, telegramBotToken: { not: null } },
+          orderBy: { updatedAt: 'desc' },
         });
       } catch (e) {
         console.error('[telegram] settings read failed:', (e as Error).message);
@@ -165,6 +169,11 @@ export class TelegramPoller {
       if (!s?.telegramBotToken) {
         await this.sleep(5000);
         continue;
+      }
+      const tail = s.telegramBotToken.slice(-6);
+      if (tail !== this.lastTokenTail) {
+        this.lastTokenTail = tail;
+        console.log(`[telegram] using config user=${s.userId ?? 'null'} token=…${tail}`);
       }
       const res = await getUpdates(s.telegramBotToken, this.offset, {
         timeout: 25,

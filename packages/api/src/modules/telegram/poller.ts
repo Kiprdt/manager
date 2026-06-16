@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { RRule } from 'rrule';
 import { SettingService } from '../settings/service';
 import { TaskService } from '../tasks/service';
 import { FinanceService, fmtRub } from '../finance/service';
@@ -504,34 +505,66 @@ export class TelegramPoller {
     }
   }
 
-  // Расписание на сегодня: события (таймблоки) + незавершённые задачи дня.
+  // Расписание на сегодня: события (включая повторяющиеся) + задачи дня.
   private async renderSchedule(userId: string): Promise<string> {
     const start = todayStart();
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
-    const [events, tasks] = await Promise.all([
+
+    const [blocks, tasks] = await Promise.all([
+      // Как в TimeBlockService: пересечения с днём + повторяющиеся (развернём ниже).
       this.db.timeBlock.findMany({
-        where: { userId, startAt: { gte: start, lt: end } },
+        where: {
+          userId,
+          OR: [
+            { startAt: { gte: start, lt: end } },
+            { endAt: { gte: start, lt: end } },
+            { startAt: { lte: start }, endAt: { gte: end } },
+            { recurrenceRule: { not: null }, startAt: { lte: end } },
+          ],
+        },
         orderBy: { startAt: 'asc' },
       }),
+      // Задачи на сегодня: с дедлайном сегодня ИЛИ бессрочные из «лога дня».
       this.db.task.findMany({
-        // Только задачи с дедлайном на сегодня (scope='day' — это режим лога,
-        // не дата, поэтому в расписание его не включаем).
-        where: { userId, status: { not: 'DONE' }, dueAt: { gte: start, lt: end } },
+        where: {
+          userId,
+          status: { not: 'DONE' },
+          parentId: null,
+          OR: [{ dueAt: { gte: start, lt: end } }, { dueAt: null, scope: 'day' }],
+        },
         orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
-        take: 20,
+        take: 30,
       }),
     ]);
+
     const hhmm = (d: Date) =>
       new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' }).format(new Date(d));
+
+    // Разворачиваем события на сегодня (повторяющиеся — через rrule).
+    const events: { start: Date; title: string; allDay: boolean }[] = [];
+    for (const b of blocks) {
+      if (!b.recurrenceRule) {
+        events.push({ start: b.startAt, title: b.title, allDay: b.isAllDay });
+        continue;
+      }
+      try {
+        const dt = new Date(b.startAt).toISOString().replace(/[-:]/g, '').replace('.000', '');
+        const rule = RRule.fromString(`DTSTART:${dt}\n${b.recurrenceRule}`);
+        if (rule.between(start, end, true).length) {
+          events.push({ start: b.startAt, title: b.title, allDay: b.isAllDay });
+        }
+      } catch {
+        events.push({ start: b.startAt, title: b.title, allDay: b.isAllDay });
+      }
+    }
+    events.sort((a, b) => a.start.valueOf() - b.start.valueOf());
+
     const dayLabel = new Intl.DateTimeFormat('ru', { weekday: 'long', day: 'numeric', month: 'long' }).format(start);
     const lines = [`<b>📅 Расписание · ${dayLabel}</b>`];
     if (events.length) {
       lines.push('\n<i>События:</i>');
-      for (const e of events) {
-        const time = e.isAllDay ? 'весь день' : `${hhmm(e.startAt)}–${hhmm(e.endAt)}`;
-        lines.push(`• ${time} — ${e.title}`);
-      }
+      for (const e of events) lines.push(`• ${e.allDay ? 'весь день' : hhmm(e.start)} — ${e.title}`);
     }
     if (tasks.length) {
       lines.push('\n<i>Задачи:</i>');

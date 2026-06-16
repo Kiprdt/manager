@@ -32,16 +32,13 @@ function parseItems(text: string): string[] {
 }
 
 const HELP =
-  'Я синхронизирую задачи и финансы с приложением.\n\n' +
-  '<b>Задачи</b>\n' +
-  '• Нажмите «➕ Добавить задачи» под списком дня и пришлите задачи — через запятую или каждую с новой строки.\n' +
-  '• Галочки ⬜/✅ отмечают выполнение.\n\n' +
-  '<b>Финансы</b>\n' +
-  '• /balance — сводка по финансам.\n' +
-  '• /payments — ближайшие регулярные платежи.\n' +
-  '• /expense 500 Еда — расход (или «-500 Еда»).\n' +
-  '• /income 5000 Зарплата — доход (или «+5000 Зарплата»).\n' +
-  'Списывается/зачисляется на первый счёт.\n\n' +
+  'Управляйте задачами и финансами кнопками внизу 👇\n\n' +
+  '<b>💰 Финансы</b> — сводка (активы, доход/расход за месяц).\n' +
+  '<b>📅 Расписание</b> — события и задачи на сегодня.\n' +
+  '<b>➕ Расход / ➕ Доход</b> — нажмите и пришлите «сумма категория», напр. <code>500 Еда</code>.\n' +
+  '<b>🔁 Платежи</b> — ближайшие регулярные платежи.\n\n' +
+  'Можно и командами: /balance, /schedule, /payments,\n' +
+  '/expense 500 Еда (или «-500 Еда»), /income 5000 Зарплата (или «+5000 …»).\n' +
   '/cancel — отменить ввод.';
 
 // Парсинг быстрой транзакции:
@@ -58,6 +55,32 @@ function parseQuickTx(
   if (!Number.isFinite(amount) || amount <= 0) return null;
   return { type: income ? 'Доход' : 'Расход', amount, category: m[2].trim() || null };
 }
+
+// «500 Еда» → { amount: 500, category: 'Еда' } (для пошагового ввода расхода/дохода).
+function parseAmountCategory(text: string): { amount: number; category: string | null } | null {
+  const m = text.match(/^([\d  .,]+)\s*(.*)$/);
+  if (!m) return null;
+  const amount = Number(m[1].replace(/[\s ]/g, '').replace(',', '.'));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return { amount, category: m[2].trim() || null };
+}
+
+// Кнопки внизу чата (persistent reply keyboard).
+const MENU_LABELS = {
+  finance: '💰 Финансы',
+  schedule: '📅 Расписание',
+  expense: '➕ Расход',
+  income: '➕ Доход',
+  payments: '🔁 Платежи',
+};
+const MENU = {
+  keyboard: [
+    [{ text: MENU_LABELS.finance }, { text: MENU_LABELS.schedule }],
+    [{ text: MENU_LABELS.expense }, { text: MENU_LABELS.income }],
+    [{ text: MENU_LABELS.payments }],
+  ],
+  resize_keyboard: true,
+};
 
 // Текст сводки финансов для Telegram.
 function renderFinanceSummary(d: {
@@ -213,66 +236,98 @@ export class TelegramPoller {
     const chat = await this.ensureChat(String(chatId));
     const text = msg.text.trim();
 
+    const noUser = async (): Promise<boolean> => {
+      if (chat.userId) return false;
+      await sendMessage(token, chatId, 'Аккаунт не привязан к приложению.', { proxyUrl, replyMarkup: MENU });
+      return true;
+    };
+    const setPending = (v: string | null) =>
+      this.db.telegramChat.update({ where: { chatId: String(chatId) }, data: { pendingAction: v } });
+
     if (text === '/start' || text === '/help') {
-      await sendMessage(token, chatId, HELP, { proxyUrl });
+      await sendMessage(token, chatId, HELP, { proxyUrl, replyMarkup: MENU });
       return;
     }
     if (text === '/cancel') {
-      await this.db.telegramChat.update({ where: { chatId: String(chatId) }, data: { pendingAction: null } });
-      await sendMessage(token, chatId, 'Ок, ввод отменён.', { proxyUrl });
+      await setPending(null);
+      await sendMessage(token, chatId, 'Ок, ввод отменён.', { proxyUrl, replyMarkup: MENU });
       return;
     }
 
-    // ── Финансовые команды ───────────────────────────────────────────────────
-    if (text === '/balance' || text === '/баланс') {
-      if (!chat.userId) {
-        await sendMessage(token, chatId, 'Аккаунт не привязан к приложению.', { proxyUrl });
+    // Пошаговый ввод суммы после кнопки «➕ Расход»/«➕ Доход».
+    if (chat.pendingAction?.startsWith('fin:')) {
+      const type = chat.pendingAction.slice(4) === 'Доход' ? 'Доход' : 'Расход';
+      await setPending(null);
+      const pc = parseAmountCategory(text);
+      if (!pc) {
+        await sendMessage(token, chatId, 'Не понял сумму. Пример: <code>500 Еда</code>', { proxyUrl, replyMarkup: MENU });
         return;
       }
-      const d = await runWithUser(chat.userId, () => this.finance.dashboard());
-      await sendMessage(token, chatId, renderFinanceSummary(d), { proxyUrl });
+      if (await noUser()) return;
+      try {
+        const { account } = await runWithUser(chat.userId!, () =>
+          this.finance.addQuickTransaction(type, pc.amount, pc.category),
+        );
+        const cat = pc.category ? ` (${pc.category})` : '';
+        const sign = type === 'Доход' ? '+' : '−';
+        await sendMessage(token, chatId, `${type} ${sign}${fmtRub(pc.amount)}${cat} добавлен.\n${account.name}: ${fmtRub(account.balance)}`, { proxyUrl, replyMarkup: MENU });
+      } catch (e) {
+        await sendMessage(token, chatId, (e as Error).message, { proxyUrl, replyMarkup: MENU });
+      }
       return;
     }
-    if (text === '/payments' || text === '/платежи') {
-      if (!chat.userId) {
-        await sendMessage(token, chatId, 'Аккаунт не привязан к приложению.', { proxyUrl });
-        return;
-      }
-      const d = await runWithUser(chat.userId, () => this.finance.dashboard());
+
+    // ── Финансы (кнопка/команда) ───────────────────────────────────────────────
+    if (text === MENU_LABELS.finance || text === '/balance' || text === '/баланс') {
+      if (await noUser()) return;
+      const d = await runWithUser(chat.userId!, () => this.finance.dashboard());
+      await sendMessage(token, chatId, renderFinanceSummary(d), { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+    if (text === MENU_LABELS.payments || text === '/payments' || text === '/платежи') {
+      if (await noUser()) return;
+      const d = await runWithUser(chat.userId!, () => this.finance.dashboard());
       if (d.upcoming.length === 0) {
-        await sendMessage(token, chatId, 'Регулярных платежей нет.', { proxyUrl });
+        await sendMessage(token, chatId, 'Регулярных платежей нет.', { proxyUrl, replyMarkup: MENU });
         return;
       }
       const lines = ['<b>🔁 Ближайшие платежи</b>'];
       for (const p of d.upcoming) {
-        const date = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'long' }).format(
-          new Date(p.nextDate),
-        );
+        const date = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'long' }).format(new Date(p.nextDate));
         lines.push(`• ${p.name} — ${fmtRub(p.amount)} · ${date}`);
       }
-      await sendMessage(token, chatId, lines.join('\n'), { proxyUrl });
+      await sendMessage(token, chatId, lines.join('\n'), { proxyUrl, replyMarkup: MENU });
       return;
     }
+    // ── Расписание (кнопка/команда) ────────────────────────────────────────────
+    if (text === MENU_LABELS.schedule || text === '/schedule' || text === '/расписание') {
+      if (await noUser()) return;
+      const txt = await runWithUser(chat.userId!, () => this.renderSchedule(chat.userId!));
+      await sendMessage(token, chatId, txt, { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+    // ── Начать ввод расхода/дохода (кнопка) ────────────────────────────────────
+    if (text === MENU_LABELS.expense || text === MENU_LABELS.income) {
+      if (await noUser()) return;
+      const type = text === MENU_LABELS.income ? 'Доход' : 'Расход';
+      await setPending(`fin:${type}`);
+      await sendMessage(token, chatId, `Введите сумму и категорию для «${type}». Пример: <code>500 Еда</code>`, { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+
+    // Быстрый ввод командой: «/expense 500 Еда», «-500 Еда», «/income 5000 …», «+5000 …»
     const quick = parseQuickTx(text);
     if (quick) {
-      if (!chat.userId) {
-        await sendMessage(token, chatId, 'Аккаунт не привязан к приложению.', { proxyUrl });
-        return;
-      }
+      if (await noUser()) return;
       try {
-        const { account } = await runWithUser(chat.userId, () =>
+        const { account } = await runWithUser(chat.userId!, () =>
           this.finance.addQuickTransaction(quick.type, quick.amount, quick.category),
         );
         const cat = quick.category ? ` (${quick.category})` : '';
         const sign = quick.type === 'Доход' ? '+' : '−';
-        await sendMessage(
-          token,
-          chatId,
-          `${quick.type} ${sign}${fmtRub(quick.amount)}${cat} добавлен.\n${account.name}: ${fmtRub(account.balance)}`,
-          { proxyUrl },
-        );
+        await sendMessage(token, chatId, `${quick.type} ${sign}${fmtRub(quick.amount)}${cat} добавлен.\n${account.name}: ${fmtRub(account.balance)}`, { proxyUrl, replyMarkup: MENU });
       } catch (e) {
-        await sendMessage(token, chatId, (e as Error).message, { proxyUrl });
+        await sendMessage(token, chatId, (e as Error).message, { proxyUrl, replyMarkup: MENU });
       }
       return;
     }
@@ -297,6 +352,45 @@ export class TelegramPoller {
     });
     const label = new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'long' }).format(day);
     await sendMessage(token, chatId, `Добавлено задач: ${items.length} (на ${label})`, { proxyUrl });
+  }
+
+  // Расписание на сегодня: события (таймблоки) + незавершённые задачи дня.
+  private async renderSchedule(userId: string): Promise<string> {
+    const start = todayStart();
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const [events, tasks] = await Promise.all([
+      this.db.timeBlock.findMany({
+        where: { userId, startAt: { gte: start, lt: end } },
+        orderBy: { startAt: 'asc' },
+      }),
+      this.db.task.findMany({
+        where: {
+          userId,
+          status: { not: 'DONE' },
+          OR: [{ dueAt: { gte: start, lt: end } }, { scope: 'day' }],
+        },
+        orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+        take: 20,
+      }),
+    ]);
+    const hhmm = (d: Date) =>
+      new Intl.DateTimeFormat('ru', { hour: '2-digit', minute: '2-digit' }).format(new Date(d));
+    const dayLabel = new Intl.DateTimeFormat('ru', { weekday: 'long', day: 'numeric', month: 'long' }).format(start);
+    const lines = [`<b>📅 Расписание · ${dayLabel}</b>`];
+    if (events.length) {
+      lines.push('\n<i>События:</i>');
+      for (const e of events) {
+        const time = e.isAllDay ? 'весь день' : `${hhmm(e.startAt)}–${hhmm(e.endAt)}`;
+        lines.push(`• ${time} — ${e.title}`);
+      }
+    }
+    if (tasks.length) {
+      lines.push('\n<i>Задачи:</i>');
+      for (const t of tasks) lines.push(`• ⬜ ${t.title}`);
+    }
+    if (!events.length && !tasks.length) lines.push('\nНа сегодня пусто 🎉');
+    return lines.join('\n');
   }
 
   private async ensureChat(chatId: string) {

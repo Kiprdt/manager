@@ -14,6 +14,9 @@ services:
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET обязателен (≥16 символов)}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      # Приём команд Telegram-бота (кнопки/команды). Токен/чат — в Настройках приложения.
+      # Если бот не настроен — поллер просто простаивает.
+      TELEGRAM_MODE: ${TELEGRAM_MODE:-polling}
     volumes:
       - app-db:/data
       - uploads:/app/packages/api/uploads

@@ -16,6 +16,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET обязателен (≥16 символов)}
       # Конкретный домен фронтенда в проде (по умолчанию открыто).
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      # Приём команд Telegram-бота. Токен/чат — в Настройках приложения.
+      TELEGRAM_MODE: ${TELEGRAM_MODE:-polling}
     volumes:
       - app-db:/data
       - uploads:/app/packages/api/uploads

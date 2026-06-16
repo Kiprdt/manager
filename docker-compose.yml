@@ -18,6 +18,8 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       # Приём команд Telegram-бота. Токен/чат — в Настройках приложения.
       TELEGRAM_MODE: ${TELEGRAM_MODE:-polling}
+      # Часовой пояс для «сегодня» в расписании и времени событий.
+      TZ: ${TZ:-Europe/Moscow}
     volumes:
       - app-db:/data
       - uploads:/app/packages/api/uploads

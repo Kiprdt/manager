@@ -17,6 +17,8 @@ services:
       # Приём команд Telegram-бота (кнопки/команды). Токен/чат — в Настройках приложения.
       # Если бот не настроен — поллер просто простаивает.
       TELEGRAM_MODE: ${TELEGRAM_MODE:-polling}
+      # Часовой пояс для «сегодня» в расписании и времени событий (бот).
+      TZ: ${TZ:-Europe/Moscow}
     volumes:
       - app-db:/data
       - uploads:/app/packages/api/uploads

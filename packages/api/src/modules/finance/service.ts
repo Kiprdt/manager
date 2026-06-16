@@ -117,6 +117,8 @@ export class FinanceService {
     amount: number,
     category?: string | null,
     accountId?: string,
+    subcategory?: string | null,
+    description?: string | null,
   ) {
     const userId = currentUserId();
     const account = accountId
@@ -132,10 +134,11 @@ export class FinanceService {
           type,
           amount,
           category: category ?? null,
+          subcategory: subcategory ?? null,
           accountId: account.id,
           toAccountId: null,
           date: new Date(),
-          description: 'Добавлено из Telegram',
+          description: description?.trim() || 'Добавлено из Telegram',
         },
       });
       const updated = await cx.finAccount.update({

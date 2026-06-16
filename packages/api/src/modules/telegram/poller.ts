@@ -35,7 +35,7 @@ const HELP =
   'Управляйте задачами и финансами кнопками внизу 👇\n\n' +
   '<b>💰 Финансы</b> — сводка (активы, доход/расход за месяц).\n' +
   '<b>📅 Расписание</b> — события и задачи на сегодня.\n' +
-  '<b>➕ Расход / ➕ Доход</b> — нажмите и пришлите «сумма категория», напр. <code>500 Еда</code>.\n' +
+  '<b>➕ Расход / ➕ Доход</b> — выбор счёта → категории → подкатегории, затем сумма.\n' +
   '<b>🔁 Платежи</b> — ближайшие регулярные платежи.\n\n' +
   'Можно и командами: /balance, /schedule, /payments,\n' +
   '/expense 500 Еда (или «-500 Еда»), /income 5000 Зарплата (или «+5000 …»).\n' +
@@ -63,6 +63,16 @@ function parseAmountCategory(text: string): { amount: number; category: string |
   const amount = Number(m[1].replace(/[\s ]/g, '').replace(',', '.'));
   if (!Number.isFinite(amount) || amount <= 0) return null;
   return { amount, category: m[2].trim() || null };
+}
+
+// Состояние пошагового ввода транзакции (хранится в TelegramChat.pendingAction).
+interface TxFlow {
+  t: 'Доход' | 'Расход';
+  a?: string; // accountId
+  aName?: string;
+  c?: string; // категория (имя)
+  s?: string; // подкатегория (имя)
+  step: 'account' | 'category' | 'sub' | 'amount';
 }
 
 // Кнопки внизу чата (persistent reply keyboard).
@@ -244,6 +254,8 @@ export class TelegramPoller {
           'Пришлите задачи — через запятую или каждую с новой строки. /cancel — отмена.',
           { proxyUrl },
         );
+      } else if (data.startsWith('fa:') || data.startsWith('fc:') || data.startsWith('fs:')) {
+        await this.handleTxFlowCallback(token, chatId, proxyUrl, ownerUserId, cq.id, data);
       } else {
         await answerCallbackQuery(token, cq.id, '', proxyUrl);
       }
@@ -275,27 +287,36 @@ export class TelegramPoller {
       return;
     }
 
-    // Пошаговый ввод суммы после кнопки «➕ Расход»/«➕ Доход».
-    if (chat.pendingAction?.startsWith('fin:')) {
-      const type = chat.pendingAction.slice(4) === 'Доход' ? 'Доход' : 'Расход';
-      await setPending(null);
-      const pc = parseAmountCategory(text);
-      if (!pc) {
-        await sendMessage(token, chatId, 'Не понял сумму. Пример: <code>500 Еда</code>', { proxyUrl, replyMarkup: MENU });
+    // Финальный шаг пошагового ввода: ожидаем сумму (+ необязательное описание).
+    if (chat.pendingAction?.startsWith('finflow:')) {
+      let st: TxFlow | null = null;
+      try {
+        st = JSON.parse(chat.pendingAction.slice('finflow:'.length));
+      } catch {
+        st = null;
+      }
+      if (st && st.step === 'amount') {
+        const pc = parseAmountCategory(text); // amount + остаток текста = описание
+        if (!pc) {
+          await sendMessage(token, chatId, 'Введите сумму, напр. <code>500</code> или <code>500 обед</code>.', { proxyUrl, replyMarkup: MENU });
+          return;
+        }
+        await setPending(null);
+        if (await noUser()) return;
+        try {
+          const { account } = await runWithUser(chat.userId!, () =>
+            this.finance.addQuickTransaction(st!.t, pc.amount, st!.c ?? null, st!.a, st!.s ?? null, pc.category),
+          );
+          const tail = [st.c, st.s].filter(Boolean).join(' / ');
+          const sign = st.t === 'Доход' ? '+' : '−';
+          await sendMessage(token, chatId, `${st.t} ${sign}${fmtRub(pc.amount)}${tail ? ` (${tail})` : ''} на «${account.name}».\nОстаток: ${fmtRub(account.balance)}`, { proxyUrl, replyMarkup: MENU });
+        } catch (e) {
+          await sendMessage(token, chatId, (e as Error).message, { proxyUrl, replyMarkup: MENU });
+        }
         return;
       }
-      if (await noUser()) return;
-      try {
-        const { account } = await runWithUser(chat.userId!, () =>
-          this.finance.addQuickTransaction(type, pc.amount, pc.category),
-        );
-        const cat = pc.category ? ` (${pc.category})` : '';
-        const sign = type === 'Доход' ? '+' : '−';
-        await sendMessage(token, chatId, `${type} ${sign}${fmtRub(pc.amount)}${cat} добавлен.\n${account.name}: ${fmtRub(account.balance)}`, { proxyUrl, replyMarkup: MENU });
-      } catch (e) {
-        await sendMessage(token, chatId, (e as Error).message, { proxyUrl, replyMarkup: MENU });
-      }
-      return;
+      // Битое/устаревшее состояние — сбрасываем и продолжаем обычную обработку.
+      await setPending(null);
     }
 
     // ── Финансы (кнопка/команда) ───────────────────────────────────────────────
@@ -331,8 +352,7 @@ export class TelegramPoller {
     if (text === MENU_LABELS.expense || text === MENU_LABELS.income) {
       if (await noUser()) return;
       const type = text === MENU_LABELS.income ? 'Доход' : 'Расход';
-      await setPending(`fin:${type}`);
-      await sendMessage(token, chatId, `Введите сумму и категорию для «${type}». Пример: <code>500 Еда</code>`, { proxyUrl, replyMarkup: MENU });
+      await this.startTxFlow(token, chatId, proxyUrl, chat.userId!, type);
       return;
     }
 
@@ -375,6 +395,115 @@ export class TelegramPoller {
     await sendMessage(token, chatId, `Добавлено задач: ${items.length} (на ${label})`, { proxyUrl });
   }
 
+  // Старт пошагового ввода транзакции: выбор счёта (инлайн-кнопки).
+  private async startTxFlow(
+    token: string,
+    chatId: number,
+    proxyUrl: string | null,
+    userId: string,
+    type: 'Доход' | 'Расход',
+  ): Promise<void> {
+    const accounts = await this.db.finAccount.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } });
+    if (!accounts.length) {
+      await sendMessage(token, chatId, 'Сначала создайте счёт в приложении (раздел «Финансы»).', { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+    const st: TxFlow = { t: type, step: 'account' };
+    await this.db.telegramChat.update({
+      where: { chatId: String(chatId) },
+      data: { pendingAction: `finflow:${JSON.stringify(st)}` },
+    });
+    const kb = { inline_keyboard: accounts.map((a) => [{ text: a.name, callback_data: `fa:${a.id}` }]) };
+    await sendMessage(token, chatId, `Новый ${type.toLowerCase()}. Выберите счёт:`, { proxyUrl, replyMarkup: kb });
+  }
+
+  // Обработка инлайн-кнопок пошагового ввода: счёт → категория → подкатегория.
+  private async handleTxFlowCallback(
+    token: string,
+    chatId: number,
+    proxyUrl: string | null,
+    ownerUserId: string | null,
+    cqId: string,
+    data: string,
+  ): Promise<void> {
+    await answerCallbackQuery(token, cqId, '', proxyUrl);
+    if (!ownerUserId) {
+      await sendMessage(token, chatId, 'Аккаунт не привязан к приложению.', { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+    const chat = await this.db.telegramChat.findUnique({ where: { chatId: String(chatId) } });
+    let st: TxFlow | null = null;
+    try {
+      if (chat?.pendingAction?.startsWith('finflow:')) st = JSON.parse(chat.pendingAction.slice('finflow:'.length));
+    } catch {
+      st = null;
+    }
+    if (!st) {
+      await sendMessage(token, chatId, 'Сессия ввода истекла — начните заново кнопкой ➕.', { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+    const save = () =>
+      this.db.telegramChat.update({
+        where: { chatId: String(chatId) },
+        data: { pendingAction: `finflow:${JSON.stringify(st)}` },
+      });
+
+    if (data.startsWith('fa:')) {
+      const acc = await this.db.finAccount.findFirst({ where: { id: data.slice(3), userId: ownerUserId } });
+      if (!acc) return;
+      st.a = acc.id;
+      st.aName = acc.name;
+      st.step = 'category';
+      await save();
+      const cats = await this.db.finCategory.findMany({
+        where: { userId: ownerUserId, parentId: null, type: st.t },
+        orderBy: { name: 'asc' },
+      });
+      if (!cats.length) {
+        st.step = 'amount';
+        await save();
+        await sendMessage(token, chatId, `Счёт: ${acc.name}. Введите сумму:`, { proxyUrl, replyMarkup: MENU });
+        return;
+      }
+      const kb = { inline_keyboard: cats.map((c) => [{ text: `${c.icon} ${c.name}`, callback_data: `fc:${c.id}` }]) };
+      await sendMessage(token, chatId, `Счёт: ${acc.name}. Категория:`, { proxyUrl, replyMarkup: kb });
+      return;
+    }
+    if (data.startsWith('fc:')) {
+      const cat = await this.db.finCategory.findFirst({ where: { id: data.slice(3), userId: ownerUserId } });
+      if (!cat) return;
+      st.c = cat.name;
+      const subs = await this.db.finCategory.findMany({ where: { userId: ownerUserId, parentId: cat.id }, orderBy: { name: 'asc' } });
+      if (subs.length) {
+        st.step = 'sub';
+        await save();
+        const kb = {
+          inline_keyboard: [
+            ...subs.map((s) => [{ text: s.name, callback_data: `fs:${s.id}` }]),
+            [{ text: '➡️ Без подкатегории', callback_data: 'fs:-' }],
+          ],
+        };
+        await sendMessage(token, chatId, `${cat.name}. Подкатегория:`, { proxyUrl, replyMarkup: kb });
+      } else {
+        st.step = 'amount';
+        await save();
+        await sendMessage(token, chatId, `${cat.name}. Введите сумму (можно с описанием: <code>500 обед</code>):`, { proxyUrl, replyMarkup: MENU });
+      }
+      return;
+    }
+    if (data.startsWith('fs:')) {
+      const subId = data.slice(3);
+      if (subId !== '-') {
+        const sub = await this.db.finCategory.findFirst({ where: { id: subId, userId: ownerUserId } });
+        if (sub) st.s = sub.name;
+      }
+      st.step = 'amount';
+      await save();
+      await sendMessage(token, chatId, 'Введите сумму (можно с описанием: <code>500 обед</code>):', { proxyUrl, replyMarkup: MENU });
+      return;
+    }
+  }
+
   // Расписание на сегодня: события (таймблоки) + незавершённые задачи дня.
   private async renderSchedule(userId: string): Promise<string> {
     const start = todayStart();
@@ -386,11 +515,9 @@ export class TelegramPoller {
         orderBy: { startAt: 'asc' },
       }),
       this.db.task.findMany({
-        where: {
-          userId,
-          status: { not: 'DONE' },
-          OR: [{ dueAt: { gte: start, lt: end } }, { scope: 'day' }],
-        },
+        // Только задачи с дедлайном на сегодня (scope='day' — это режим лога,
+        // не дата, поэтому в расписание его не включаем).
+        where: { userId, status: { not: 'DONE' }, dueAt: { gte: start, lt: end } },
         orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
         take: 20,
       }),
